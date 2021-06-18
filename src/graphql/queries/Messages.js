@@ -11,7 +11,7 @@ const getMessage = gql`
 `;
 const getAllMessages = gql`
   query getAllMessages($contains: String = "17/06/2021 10:34:48 p. m.") {
-    getAllMessages(filter: { 
+    listMessageModelTypes(filter: { 
       messageDate: {
         contains: $contains,
       }
@@ -19,14 +19,13 @@ const getAllMessages = gql`
       items {
         id,
         message,
-        messageData,
+        messageDate,
       }
     }
   }
 `;
 
-const queries = {
+export default {
   getMessage,
   getAllMessages,
 };
-export default queries;
