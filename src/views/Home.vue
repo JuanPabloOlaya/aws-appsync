@@ -8,7 +8,6 @@
   </div>
 
 </template>
-
 <script>
 import queries from '@/graphql/queries/Messages';
 
