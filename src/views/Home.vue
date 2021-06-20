@@ -24,7 +24,21 @@
         </div>
       </div>
       <div class="home__col home--mw-50">
-        <pre>{{ listMessageModelTypes }}</pre>
+        <div class="home__row">
+          <div class="home__col home--padding">
+            <input
+              type="text"
+              class="home__input"
+              v-model="contains"
+              placeholder="Type your filter"
+            >
+          </div>
+        </div>
+        <div class="home__row">
+          <div class="home__col">
+            <pre>{{ listMessageModelTypes }}</pre>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -32,23 +46,27 @@
 <script>
 import queries from '@/graphql/queries/Messages';
 import mutations from '@/graphql/mutations/Messages';
+import subscriptions from '@/graphql/subscriptions/Messages';
 
 export default {
   name: 'Home',
   data: () => ({
     message: '',
+    contains: '',
   }),
   methods: {
     sendMessage() {
-      this.$apollo.mutate({
-        mutation: mutations.sendMessage,
-        variables: {
-          message: this.message,
-          messageDate: new Date(),
-        },
-      }).then((response) => {
-        console.log(response);
-      }).catch((error) => console.error(error));
+      this.$apollo
+        .mutate({
+          mutation: mutations.sendMessage,
+          variables: {
+            message: this.message,
+            messageDate: new Date(),
+          },
+        }).then(() => {
+          this.message = '';
+        })
+        .catch((error) => console.error(error));
     },
   },
   apollo: {
@@ -62,10 +80,30 @@ export default {
     },
     listMessageModelTypes: {
       query: queries.getAllMessages,
-      variables: {
-        contains: '',
+      subscribeToMore: {
+        document: subscriptions.onCreateMesssage,
+        updateQuery: (previousResult, { subscriptionData }) => {
+          debugger;
+          const previousClone = { ...previousResult };
+          const subscriptionItem = subscriptionData.data.onCreateMessageModelType;
+          const indexMessage = previousClone.listMessageModelTypes.items.indexOf(subscriptionItem);
+
+          previousClone.listMessageModelTypes.items = indexMessage && indexMessage !== -1
+            ? (previousClone.listMessageModelTypes.items[indexMessage] = subscriptionItem)
+            : previousClone.listMessageModelTypes.items.concat([subscriptionItem]);
+
+          return previousClone;
+        },
+      },
+      variables() {
+        return {
+          contains: this.contains,
+        };
       },
       fetchPolicy: 'cache-and-network',
+      update(data) {
+        return data.listMessageModelTypes;
+      },
     },
   },
 };
@@ -93,6 +131,9 @@ pre {
 
   &--mw-50 {
     max-width: 50%;
+  }
+  &--padding {
+    padding: 16px;
   }
 }
 </style>
