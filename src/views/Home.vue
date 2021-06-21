@@ -8,7 +8,7 @@
               <label for="message" class="home__label">Message</label>
               <textarea
                 name="message"
-                v-model="message"
+                v-model="text"
                 id="message"
                 cols="30"
                 rows="10"
@@ -35,8 +35,8 @@
           </div>
         </div>
         <div class="home__row">
-          <div class="home__col">
-            <pre>{{ listMessageModelTypes }}</pre>
+          <div class="home__col home--padding">
+            <pre>{{ messagesList }}</pre>
           </div>
         </div>
       </div>
@@ -44,67 +44,29 @@
   </div>
 </template>
 <script>
-import queries from '@/graphql/queries/Messages';
-import mutations from '@/graphql/mutations/Messages';
-import subscriptions from '@/graphql/subscriptions/Messages';
+import { mapActions, mapState } from 'vuex';
 
 export default {
   name: 'Home',
   data: () => ({
-    message: '',
     contains: '',
   }),
-  methods: {
-    sendMessage() {
-      this.$apollo
-        .mutate({
-          mutation: mutations.sendMessage,
-          variables: {
-            message: this.message,
-            messageDate: new Date(),
-          },
-        }).then(() => {
-          this.message = '';
-        })
-        .catch((error) => console.error(error));
+  computed: {
+    ...mapState('messagesModule', ['messageText', 'messagesList']),
+    text: {
+      get() {
+        return this.messageText;
+      },
+      set(val) {
+        this.updateMessageText(val);
+      },
     },
   },
-  apollo: {
-    getMessageModelType: {
-      query: queries.getMessage,
-      variables: {
-        id: 'EU37mTTGQ4qQiTTUeSsWi6Dqrq2XLk4u',
-        messageDate: '17-06-2021 07:34:20',
-      },
-      fetchPolicy: 'cache-and-network',
-    },
-    listMessageModelTypes: {
-      query: queries.getAllMessages,
-      subscribeToMore: {
-        document: subscriptions.onCreateMesssage,
-        updateQuery: (previousResult, { subscriptionData }) => {
-          debugger;
-          const previousClone = { ...previousResult };
-          const subscriptionItem = subscriptionData.data.onCreateMessageModelType;
-          const indexMessage = previousClone.listMessageModelTypes.items.indexOf(subscriptionItem);
-
-          previousClone.listMessageModelTypes.items = indexMessage && indexMessage !== -1
-            ? (previousClone.listMessageModelTypes.items[indexMessage] = subscriptionItem)
-            : previousClone.listMessageModelTypes.items.concat([subscriptionItem]);
-
-          return previousClone;
-        },
-      },
-      variables() {
-        return {
-          contains: this.contains,
-        };
-      },
-      fetchPolicy: 'cache-and-network',
-      update(data) {
-        return data.listMessageModelTypes;
-      },
-    },
+  methods: {
+    ...mapActions('messagesModule', ['sendMessage', 'updateMessageText', 'fetchMessages']),
+  },
+  mounted() {
+    this.fetchMessages();
   },
 };
 </script>
